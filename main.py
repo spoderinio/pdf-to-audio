@@ -1,10 +1,10 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter.filedialog import askopenfile, FileDialog
-from playsound import playsound
+from pygame import mixer
 import os
 from google.cloud import texttospeech
-import PyPDF2
+from poppler import load_from_file
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'logical-honor-341113-c6ae6a879673.json'
 client = texttospeech.TextToSpeechClient()
@@ -37,8 +37,11 @@ def list_voices():
             f"Natural Sample Rate Hertz: {voice.natural_sample_rate_hertz}\n")
 
 
+text = ""
+
+
 def get_audio():
-    text = """This is a first test of the API program"""
+
     sys_text = texttospeech.SynthesisInput(ssml=text)
 
     voice = texttospeech.VoiceSelectionParams(
@@ -61,6 +64,7 @@ def get_audio():
 
 
 def open_file():
+    global text
     # grab the filename of the pdf file
     open_file = filedialog.askopenfilename(
         initialdir="E:\Python projects\PDF-to-audio",
@@ -71,19 +75,28 @@ def open_file():
     # check to see if there is a file
     if open_file:
         # Open the PDF file
-        pdf_file = PyPDF2.PdfFileReader(open_file)
+        pdf_file = load_from_file(open_file)
+        print(f'*********{pdf_file}***************')
         # Set the page to read
-        page = pdf_file.getPage(1)
+        page = pdf_file.create_page(1)
         # Extract the text from the pdf file
-        page_content = page.extractText()
+        text = page.text()
 
         # Add text to textbox
-        text_box.insert(1.0, page_content)
-        print(page_content)
+        text_box.insert(1.0, text)
+        return text
+
+
+mixer.init()
+
+
+def play_music():
+    mixer.music.load("audio.mp3")
+    mixer.music.play()
 
 
 root = Tk()
-root.title = "PDF to audio"
+root.title("PDF to audio")
 header = Frame(root, width=800, height=175)
 header.grid(columnspan=3, rowspan=3, row=0)
 
@@ -93,8 +106,8 @@ main_content.grid(columnspan=3, rowspan=1, row=3)
 
 
 # Create a textbox
-text_box = Text(root, height=30, width=50)
-text_box.grid(columnspan=2, rowspan=2, row=2)
+text_box = Text(root, height=30, width=110)
+text_box.grid(columnspan=3, rowspan=2, row=2)
 
 # Create a Menu
 my_menu = Menu(root)
@@ -107,6 +120,10 @@ file_menu.add_command(label="Open", command=open_file)
 file_menu.add_command(label="Convert", command=get_audio)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
+
+# Add play button
+play_button = Button(root, text="Play", command=play_music)
+play_button.grid(row=2, column=3)
 
 
 root.mainloop()
